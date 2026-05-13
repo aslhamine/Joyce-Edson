@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2b211b">
+  <title>Painel dos Noivos | Joyce & Edson</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <section class="admin-login" id="loginPanel" aria-labelledby="loginTitle">
+      <p class="overline centered">Joyce & Edson</p>
+      <h1 id="loginTitle">Painel dos Noivos</h1>
+      <p class="muted centered">Entrem com o utilizador criado no Supabase para aprovar mensagens e acompanhar confirmações.</p>
+      <form class="admin-form" id="loginForm">
+        <label>Email<input id="adminEmail" type="email" autocomplete="email" required></label>
+        <label>Palavra-passe<input id="adminPassword" type="password" autocomplete="current-password" required></label>
+        <button class="primary-link full" type="submit">Entrar</button>
+        <p class="admin-status" id="loginStatus" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="admin-dashboard" id="dashboardPanel" hidden>
+      <header class="admin-header">
+        <div>
+          <p class="overline">Painel privado</p>
+          <h1>Confirmações</h1>
+        </div>
+        <div class="admin-header-actions">
+          <button class="secondary-link" id="refreshButton" type="button">Actualizar</button>
+          <button class="secondary-link dark" id="logoutButton" type="button">Sair</button>
+        </div>
+      </header>
+
+      <div class="admin-stats" id="adminStats" aria-live="polite"></div>
+
+      <div class="admin-toolbar">
+        <button class="filter-button is-active" type="button" data-filter="all">Todas</button>
+        <button class="filter-button" type="button" data-filter="pending">Por aprovar</button>
+        <button class="filter-button" type="button" data-filter="approved">Publicadas</button>
+        <button class="filter-button" type="button" data-filter="attending">Presentes</button>
+        <button class="filter-button" type="button" data-filter="declined">Ausentes</button>
+      </div>
+
+      <div class="admin-list" id="adminList" aria-live="polite"></div>
+      <p class="admin-status" id="dashboardStatus" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

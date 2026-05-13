@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2b211b">
+  <meta name="description" content="Convite digital de casamento de Joyce e Edson, 22 de Agosto de 2026.">
+  <meta property="og:title" content="Joyce & Edson - Casamento">
+  <meta property="og:description" content="Com carinho, convidamos para celebrar o nosso amor.">
+  <meta property="og:image" content="assets/images/familia-sentada.png">
+  <title>Joyce & Edson | 22 de Agosto de 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="loader" id="loader" aria-label="A carregar convite">
+    <p>Joyce & Edson</p>
+    <span></span>
+  </div>
+
+  <audio id="bgAudio" preload="auto" loop>
+    <source src="assets/audio/stuck.mp3" type="audio/mpeg">
+  </audio>
+
+  <button class="music-button" id="musicButton" type="button" aria-label="Tocar música">
+    <span class="music-icon" aria-hidden="true"></span>
+    <span class="music-meta">
+      <strong>Stuck</strong>
+      <small>Lecrae &amp; TobyMac</small>
+      <em>Esta música embala a nossa história.</em>
+    </span>
+    <span class="music-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+  </button>
+
+  <header class="hero" id="inicio">
+    <picture class="hero-media">
+      <img src="assets/images/familia-sentada.png" alt="Joyce, Edson e o filho Kayler juntos">
+    </picture>
+    <div class="hero-shade"></div>
+    <div class="hero-content reveal">
+      <p class="overline">Save the Date</p>
+      <h1>Joyce <span>&</span> Edson</h1>
+      <p class="hero-date">22 de Agosto de 2026</p>
+      <p class="hero-copy">
+        Com a bênção de Deus e o amor da nossa família, queremos viver este dia ao lado de quem faz parte da nossa história.
+      </p>
+      <a class="primary-link" href="#confirmacao">Confirmar presença</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="countdown-section section-dark" aria-labelledby="countdown-title">
+      <div class="section-inner narrow reveal">
+        <p class="overline">Até ao nosso sim</p>
+        <h2 id="countdown-title">Cada segundo aproxima o nosso para sempre</h2>
+        <div class="countdown" id="countdown" aria-live="polite">
+          <div><strong id="days">000</strong><span>Dias</span></div>
+          <div><strong id="hours">00</strong><span>Horas</span></div>
+          <div><strong id="minutes">00</strong><span>Min</span></div>
+          <div><strong id="seconds">00</strong><span>Seg</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="letter-section" aria-labelledby="letter-title">
+      <div class="section-inner">
+        <div class="letter-card reveal">
+          <p class="overline">Convite</p>
+          <h2 id="letter-title">Querido(a) <span id="guestName">convidado(a)</span>,</h2>
+          <p>
+            Há histórias que nascem em silêncio e crescem com gestos pequenos: uma mão dada, uma promessa cuidada, uma família que se constrói todos os dias.
+          </p>
+          <p>
+            No dia 22 de Agosto de 2026, queremos celebrar o amor que nos trouxe até aqui. A sua presença será uma bênção, um abraço e uma memória guardada para sempre.
+          </p>
+          <div class="reserved-seat">
+            <span id="seatNumber">Mesa a confirmar</span>
+            <strong id="seatFlower">Com carinho</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="story-section" aria-labelledby="story-title">
+      <div class="section-inner">
+        <p class="overline centered">A nossa história</p>
+        <h2 id="story-title" class="centered">Do primeiro olhar ao altar</h2>
+        <div class="story-grid">
+          <article class="story-card reveal">
+            <img src="assets/images/jantar-romantico.png" alt="Joyce e Edson num jantar romântico">
+            <div>
+              <span>01</span>
+              <h3>O amor que escolhe ficar</h3>
+              <p>Entre risos, conversas longas e sonhos partilhados, aprendemos que o amor verdadeiro é casa: acolhe, protege e floresce.</p>
+            </div>
+          </article>
+          <article class="story-card reveal">
+            <img src="assets/images/gravidez.png" alt="Edson beijando a barriga de Joyce durante a gravidez">
+            <div>
+              <span>02</span>
+              <h3>A bênção que nos uniu ainda mais</h3>
+              <p>Kayler trouxe uma luz nova aos nossos dias e transformou o nosso amor numa família cheia de ternura.</p>
+            </div>
+          </article>
+          <article class="story-card reveal">
+            <img src="assets/images/familia-retrato.png" alt="Retrato da família de Joyce e Edson">
+            <div>
+              <span>03</span>
+              <h3>Agora celebramos juntos</h3>
+              <p>Chegamos ao altar com gratidão, maturidade e o coração pronto para dizer sim diante de Deus, da família e dos amigos.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="events-section section-soft" aria-labelledby="events-title">
+      <div class="section-inner">
+        <p class="overline centered">O grande dia</p>
+        <h2 id="events-title" class="centered">Programa</h2>
+        <div class="timeline">
+          <article class="timeline-item reveal">
+            <span class="timeline-icon" aria-hidden="true">✝</span>
+            <time>10:00</time>
+            <div><h3>Cerimónia religiosa</h3><p>Paróquia São Francisco Xavier · Traje formal</p></div>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-icon" aria-hidden="true">🥂</span>
+            <time>12:00</time>
+            <div><h3>Welcome drink</h3><p>Salão Aliança · recepção e brinde</p></div>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-icon" aria-hidden="true">💍</span>
+            <time>13:00</time>
+            <div><h3>Cerimónia civil</h3><p>O segundo "sim" — rodeados de amor</p></div>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-icon" aria-hidden="true">🎶</span>
+            <time>14:30</time>
+            <div><h3>Celebração</h3><p>Almoço, música e dança até ao fim</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="map-section" aria-labelledby="map-title">
+      <div class="section-inner">
+        <p class="overline centered">Como chegar</p>
+        <h2 id="map-title" class="centered">Do altar à celebração</h2>
+        <div class="map-layout">
+          <div class="map-frame reveal">
+            <iframe
+              title="Mapa dos locais do casamento"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Par%C3%B3quia%20S%C3%A3o%20Francisco%20Xavier%20do%20Benfica%20Maputo%20Sal%C3%A3o%20Alian%C3%A7a%20Eventos%20Maputo&output=embed"></iframe>
+          </div>
+          <div class="location-list">
+            <article class="location-card reveal">
+              <span class="location-icon church" aria-hidden="true">✝</span>
+              <div>
+                <strong>10h00 — Paróquia São Francisco Xavier</strong>
+                <p>Cerimónia religiosa · Benfica, Maputo</p>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=Par%C3%B3quia%20S%C3%A3o%20Francisco%20Xavier%20do%20Benfica%2C%20Maputo" target="_blank" rel="noreferrer">Como chegar</a>
+              </div>
+            </article>
+            <article class="location-card reveal">
+              <span class="location-icon party" aria-hidden="true">🥂</span>
+              <div>
+                <strong>12h00 — Salão Aliança Eventos</strong>
+                <p>Recepção, almoço e celebração · Maputo</p>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=Sal%C3%A3o%20Alian%C3%A7a%20Eventos%2C%20Maputo" target="_blank" rel="noreferrer">Como chegar</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="save-date-section section-dark" aria-labelledby="save-title">
+      <div class="section-inner save-date-grid">
+        <div class="save-copy reveal">
+          <p class="overline">Inspirado no save the date</p>
+          <h2 id="save-title">Agosto 2026</h2>
+          <p>Guardem este sábado com amor. A referência do PDF foi mantida no espírito minimalista, delicado e dourado, corrigindo a leitura para o dia do casamento.</p>
+          <a class="text-link" href="assets/docs/save-the-date.pdf" target="_blank" rel="noreferrer">Ver PDF original</a>
+        </div>
+        <div class="calendar reveal" aria-label="Calendário de Agosto de 2026">
+          <div class="calendar-head">Save the Date</div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery-section" aria-labelledby="gallery-title">
+      <div class="section-inner">
+        <p class="overline centered">Memórias</p>
+        <h2 id="gallery-title" class="centered">Uma família, um amor, uma promessa</h2>
+        <div class="gallery">
+          <figure class="reveal tall"><img src="assets/images/casal-retrato.png" alt="Joyce e Edson abraçados"></figure>
+          <figure class="reveal"><img src="assets/images/familia-sentada.png" alt="Família sentada e sorridente"></figure>
+          <figure class="reveal wide"><img src="assets/images/jantar-romantico.png" alt="Jantar romântico à luz de velas"></figure>
+          <figure class="reveal"><img src="assets/images/gravidez.png" alt="Momento da gravidez"></figure>
+          <figure class="reveal tall"><img src="assets/images/familia-retrato.png" alt="Família reunida"></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="gifts-section section-soft" aria-labelledby="gifts-title">
+      <div class="section-inner narrow reveal">
+        <p class="overline centered">Presentes</p>
+        <h2 id="gifts-title" class="centered">O melhor presente é celebrar connosco</h2>
+        <p class="centered muted">Caso desejem mimar-nos, deixamos algumas formas simples de contribuir para a nossa nova etapa.</p>
+        <div class="gift-actions">
+          <button type="button" class="secondary-link" data-open-modal="giftModal">Lista de presentes</button>
+          <button type="button" class="secondary-link dark" data-open-modal="paymentModal">Contribuir</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="rsvp-section section-dark" id="confirmacao" aria-labelledby="rsvp-title">
+      <div class="section-inner narrow">
+        <form class="rsvp-form reveal" id="rsvpForm">
+          <p class="overline centered">Confirmação</p>
+          <h2 id="rsvp-title" class="centered">A sua presença é a nossa alegria</h2>
+          <label>Nome completo<input id="rsvpName" type="text" autocomplete="name" required></label>
+          <label>Telefone<input id="rsvpPhone" type="tel" autocomplete="tel" placeholder="+258"></label>
+          <label>Confirma presença?
+            <select id="rsvpAnswer" required>
+              <option value="">Seleccione</option>
+              <option value="sim">Sim, estarei presente</option>
+              <option value="nao">Infelizmente não poderei comparecer</option>
+            </select>
+          </label>
+          <label>Mensagem aos noivos<textarea id="rsvpMessage" rows="4" placeholder="Deixe uma mensagem de carinho"></textarea></label>
+          <button class="primary-link full" type="submit">Confirmar presença</button>
+          <p class="form-note">A resposta fica guardada directamente no painel dos noivos.</p>
+        </form>
+        <div class="rsvp-thanks" id="rsvpThanks" hidden aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="guest-wall-section section-soft" aria-labelledby="guest-wall-title">
+      <div class="section-inner">
+        <p class="overline centered">Livro de visitas</p>
+        <h2 id="guest-wall-title" class="centered">O que os nossos convidados estão a dizer</h2>
+        <div class="guest-wall" id="guestWall" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Joyce & Edson</p>
+    <span>22 de Agosto de 2026 · Maputo, Moçambique</span>
+  </footer>
+
+  <div class="modal" id="giftModal" role="dialog" aria-modal="true" aria-labelledby="giftModalTitle">
+    <div class="modal-box">
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+      <h2 id="giftModalTitle">Lista de presentes</h2>
+      <div class="gift-list" id="giftList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+    <div class="modal-box">
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+      <h2 id="paymentModalTitle">Contribuir com carinho</h2>
+      <p class="muted">Actualize os números abaixo quando tiver os dados finais dos noivos.</p>
+      <div class="payment-grid">
+        <div><span>M-Pesa</span><strong id="mpesaNumber">+258 8X XXX XXXX</strong><button type="button" data-copy="mpesaNumber">Copiar</button></div>
+        <div><span>e-Mola</span><strong id="emolaNumber">+258 8X XXX XXXX</strong><button type="button" data-copy="emolaNumber">Copiar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
