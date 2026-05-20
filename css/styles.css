@@ -720,6 +720,37 @@ h2 {
 }
 .footer span { font-size: .85rem; }
 
+.footer-qr {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 18px auto 12px;
+  padding: 12px;
+  border: 1px solid rgba(195, 154, 85, .34);
+  background: rgba(255, 250, 244, .08);
+}
+
+.footer-qr[hidden] {
+  display: none;
+}
+
+.footer-qr img {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  padding: 6px;
+  background: #fffaf4;
+}
+
+.footer-qr small {
+  color: rgba(255, 255, 255, .62);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .modal {
   position: fixed;
   inset: 0;

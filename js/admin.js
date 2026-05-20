@@ -44,6 +44,9 @@ const inviteImageUpload = document.getElementById("inviteImageUpload");
 const inviteImagePreview = document.getElementById("inviteImagePreview");
 const showTableInput = document.getElementById("showTableInput");
 const inviteList = document.getElementById("inviteList");
+const mobileMenuButton = document.getElementById("mobileMenuButton");
+const mobileModuleSheet = document.getElementById("mobileModuleSheet");
+const mobileMenuBackdrop = document.getElementById("mobileMenuBackdrop");
 
 let currentFilter = "all";
 let activeTab = "rsvps";
@@ -54,7 +57,7 @@ let inviteSettings = { ...inviteDefaults };
 let refreshTimer;
 
 function escapeHtml(value) {
-  return String(value || "")
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -123,17 +126,32 @@ async function uploadInviteImage(file) {
       const { data } = client.storage.from("invite-assets").getPublicUrl(path);
       inviteImage.value = data.publicUrl;
       updateInviteImagePreview(data.publicUrl);
-      setStatus("Imagem carregada. Actualize o modelo para guardar.");
+      inviteSettings = {
+        message: inviteMessage.value.trim() || inviteDefaults.message,
+        image: data.publicUrl,
+        showTable: showTableInput.checked
+      };
+      await saveInviteSettings();
+      renderActiveTab();
+      setStatus("Imagem carregada e guardada no modelo do convite.");
       return;
     }
 
-    setStatus(`Nao foi possivel enviar para o Supabase Storage: ${error.message}`);
+    setStatus(`Nao foi possivel enviar a imagem. Confirme se o bucket invite-assets existe no Supabase.`);
+    return;
   }
 
   const dataUrl = await readFileAsDataUrl(file);
   inviteImage.value = dataUrl;
   updateInviteImagePreview(dataUrl);
-  setStatus("Imagem preparada neste navegador. Actualize o modelo para guardar.");
+  inviteSettings = {
+    message: inviteMessage.value.trim() || inviteDefaults.message,
+    image: dataUrl,
+    showTable: showTableInput.checked
+  };
+  await saveInviteSettings();
+  renderActiveTab();
+  setStatus("Imagem carregada e guardada neste navegador.");
 }
 
 function showDashboard() {
@@ -219,6 +237,21 @@ async function savePlannerData() {
       show_table: inviteSettings.showTable
     })
   ]);
+}
+
+async function saveInviteSettings() {
+  saveLocalData();
+  if (!client) return { saved: true };
+
+  const { error } = await client.from("invite_settings").upsert({
+    id: "default",
+    message: inviteSettings.message,
+    image: inviteSettings.image,
+    show_table: inviteSettings.showTable
+  });
+
+  if (error) return { saved: false, error };
+  return { saved: true };
 }
 
 function normalizeGuest(row) {
@@ -401,20 +434,8 @@ function renderGuestChip(guest) {
 }
 
 function buildInviteUrl(guest) {
-  const table = getTableById(guest.table_id);
   const url = new URL("index.html", window.location.href);
-  url.searchParams.set("nome", guest.name);
-  url.searchParams.set("limite", String(guest.max_companions || guest.group_size || 1));
   url.searchParams.set("gid", guest.invite_token);
-  url.searchParams.set("vermesa", inviteSettings.showTable ? "1" : "0");
-  if (!client) {
-    url.searchParams.set("msg", inviteSettings.message);
-    url.searchParams.set("img", inviteSettings.image);
-  }
-  if (table) {
-    url.searchParams.set("mesa", String(table.number));
-    url.searchParams.set("mesaNome", table.name);
-  }
   return url.href;
 }
 
@@ -484,10 +505,39 @@ function renderActiveTab() {
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.tab === activeTab);
   });
+  closeMobileMenu();
 
   if (activeTab === "rsvps") renderRsvps();
   if (activeTab === "tables") renderTables();
   if (activeTab === "invites") renderInvites();
+}
+
+function openMobileMenu() {
+  mobileModuleSheet.hidden = false;
+  mobileMenuBackdrop.hidden = false;
+  mobileMenuButton.classList.add("is-open");
+  mobileMenuButton.setAttribute("aria-expanded", "true");
+  document.body.classList.add("admin-menu-open");
+}
+
+function closeMobileMenu() {
+  if (!mobileModuleSheet || !mobileMenuBackdrop || !mobileMenuButton) return;
+  mobileModuleSheet.hidden = true;
+  mobileMenuBackdrop.hidden = true;
+  mobileMenuButton.classList.remove("is-open");
+  mobileMenuButton.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("admin-menu-open");
+}
+
+function activateTab(tabName, shouldScroll = true) {
+  activeTab = tabName;
+  renderActiveTab();
+  if (shouldScroll) {
+    document.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
 }
 
 async function loadRsvps() {
@@ -639,9 +689,19 @@ document.querySelectorAll("[data-filter]").forEach((button) => {
 
 document.querySelectorAll("[data-tab]").forEach((button) => {
   button.addEventListener("click", () => {
-    activeTab = button.dataset.tab;
-    renderActiveTab();
+    activateTab(button.dataset.tab);
   });
+});
+
+mobileMenuButton.addEventListener("click", () => {
+  if (mobileModuleSheet.hidden) openMobileMenu();
+  else closeMobileMenu();
+});
+
+mobileMenuBackdrop.addEventListener("click", closeMobileMenu);
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeMobileMenu();
 });
 
 adminList.addEventListener("click", async (event) => {
@@ -694,16 +754,16 @@ importButton.addEventListener("click", () => {
   setStatus(`${imported.length} convidado(s) importado(s).`);
 });
 
-inviteForm.addEventListener("submit", (event) => {
+inviteForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   inviteSettings = {
     message: inviteMessage.value.trim() || inviteDefaults.message,
     image: inviteImage.value.trim() || inviteDefaults.image,
     showTable: showTableInput.checked
   };
-  void savePlannerData();
+  const result = await saveInviteSettings();
   renderActiveTab();
-  setStatus("Modelo de convite actualizado.");
+  setStatus(result.saved ? "Modelo do convite guardado." : `Nao foi possivel guardar o modelo: ${result.error.message}`);
 });
 
 inviteImage.addEventListener("input", () => {

@@ -16,7 +16,7 @@
     <section class="admin-login" id="loginPanel" aria-labelledby="loginTitle">
       <p class="overline centered">Joyce & Edson</p>
       <h1 id="loginTitle">Painel dos Noivos</h1>
-      <p class="muted centered">Entrem com o utilizador criado no Supabase para aprovar mensagens e acompanhar confirmações. Para testes locais, use admin.html?local=1.</p>
+      <p class="muted centered">Entre para gerir confirmacoes, mesas e links dos convidados. Para testes locais, use admin.html?local=1.</p>
       <form class="admin-form" id="loginForm">
         <label>Email<input id="adminEmail" type="email" autocomplete="email" required></label>
         <label>Palavra-passe<input id="adminPassword" type="password" autocomplete="current-password" required></label>
@@ -29,24 +29,44 @@
       <header class="admin-header">
         <div>
           <p class="overline">Painel privado</p>
-          <h1>Confirmações</h1>
+          <h1>Gestao do casamento</h1>
+          <p class="admin-lead">Tudo separado por tarefas: confirme respostas, organize mesas e envie convites personalizados.</p>
         </div>
         <div class="admin-header-actions">
-          <button class="secondary-link" id="refreshButton" type="button">Actualizar</button>
+          <button class="secondary-link" id="refreshButton" type="button">Actualizar dados</button>
           <button class="secondary-link dark" id="logoutButton" type="button">Sair</button>
         </div>
       </header>
 
-      <div class="admin-stats" id="adminStats" aria-live="polite"></div>
-
       <nav class="admin-tabs" aria-label="Areas do painel">
-        <button class="filter-button is-active" type="button" data-tab="rsvps">Confirmacoes</button>
-        <button class="filter-button" type="button" data-tab="tables">Mesas</button>
-        <button class="filter-button" type="button" data-tab="invites">Convites</button>
+        <button class="filter-button is-active" type="button" data-tab="rsvps">
+          <span>1</span>
+          <strong>Respostas</strong>
+          <small>RSVP e mural</small>
+        </button>
+        <button class="filter-button" type="button" data-tab="tables">
+          <span>2</span>
+          <strong>Mesas</strong>
+          <small>Lista e lugares</small>
+        </button>
+        <button class="filter-button" type="button" data-tab="invites">
+          <span>3</span>
+          <strong>Links</strong>
+          <small>Convites e QR</small>
+        </button>
       </nav>
 
-      <section data-panel="rsvps">
-        <div class="admin-toolbar">
+      <div class="admin-stats" id="adminStats" aria-live="polite"></div>
+
+      <section class="admin-section" data-panel="rsvps">
+        <header class="panel-heading">
+          <div>
+            <p class="overline">Passo 1</p>
+            <h2>Confirmacoes recebidas</h2>
+            <p>Veja quem respondeu, aprove mensagens para o mural e remova duplicados.</p>
+          </div>
+        </header>
+        <div class="admin-toolbar" aria-label="Filtrar confirmacoes">
           <button class="filter-button is-active" type="button" data-filter="all">Todas</button>
           <button class="filter-button" type="button" data-filter="pending">Por aprovar</button>
           <button class="filter-button" type="button" data-filter="approved">Publicadas</button>
@@ -56,56 +76,118 @@
         <div class="admin-list" id="adminList" aria-live="polite"></div>
       </section>
 
-      <section class="manager-grid" data-panel="tables" hidden>
-        <form class="admin-form manager-card" id="guestForm">
-          <h2>Adicionar convidado</h2>
-          <label>Nome ou casal<input name="name" type="text" required></label>
-          <label>Telefone<input name="phone" type="tel" placeholder="+258"></label>
-          <label>E-mail<input name="email" type="email"></label>
-          <div class="form-row">
-            <label>Pessoas<input name="group_size" type="number" min="1" value="1" required></label>
-            <label>Limite RSVP<input name="max_companions" type="number" min="1" value="1" required></label>
+      <section class="admin-section manager-grid" data-panel="tables" hidden>
+        <header class="panel-heading full-row">
+          <div>
+            <p class="overline">Passo 2</p>
+            <h2>Lista e mesas</h2>
+            <p>Adicione convidados, crie mesas e distribua lugares sem editar links manualmente.</p>
           </div>
-          <button class="primary-link full" type="submit">Adicionar</button>
-        </form>
+          <button class="secondary-link dark" id="autoSeatButton" type="button">Distribuir automaticamente</button>
+        </header>
 
-        <form class="admin-form manager-card" id="tableForm">
-          <h2>Criar mesa</h2>
-          <label>Numero<input name="number" type="number" min="1" required></label>
-          <label>Nome<input name="name" type="text" placeholder="Rosa, Familia, Amigos"></label>
-          <label>Capacidade<input name="capacity" type="number" min="1" value="8" required></label>
-          <button class="primary-link full" type="submit">Criar mesa</button>
-        </form>
+        <details class="manager-card task-card" open>
+          <summary>Adicionar convidado</summary>
+          <form class="admin-form" id="guestForm">
+            <label>Nome ou casal<input name="name" type="text" required></label>
+            <label>Telefone<input name="phone" type="tel" placeholder="+258"></label>
+            <label>E-mail<input name="email" type="email"></label>
+            <div class="form-row">
+              <label>Pessoas<input name="group_size" type="number" min="1" value="1" required></label>
+              <label>Limite RSVP<input name="max_companions" type="number" min="1" value="1" required></label>
+            </div>
+            <button class="primary-link full" type="submit">Adicionar convidado</button>
+          </form>
+        </details>
 
-        <section class="manager-card import-card">
-          <h2>Importar lista</h2>
+        <details class="manager-card task-card">
+          <summary>Criar mesa</summary>
+          <form class="admin-form" id="tableForm">
+            <label>Numero<input name="number" type="number" min="1" required></label>
+            <label>Nome<input name="name" type="text" placeholder="Rosa, Familia, Amigos"></label>
+            <label>Capacidade<input name="capacity" type="number" min="1" value="8" required></label>
+            <button class="primary-link full" type="submit">Criar mesa</button>
+          </form>
+        </details>
+
+        <details class="manager-card import-card task-card">
+          <summary>Importar lista</summary>
           <p class="muted">Uma linha por convidado: nome, telefone, email, pessoas, limite.</p>
           <textarea id="guestImport" rows="5" placeholder="Carlos & Anita, +258840000001, email@exemplo.com, 2, 2"></textarea>
           <button class="secondary-link" id="importButton" type="button">Importar convidados</button>
-        </section>
+        </details>
 
-        <div class="table-actions">
-          <button class="secondary-link dark" id="autoSeatButton" type="button">Distribuir automaticamente</button>
-        </div>
         <div class="table-board" id="tableBoard" aria-live="polite"></div>
       </section>
 
-      <section class="manager-grid" data-panel="invites" hidden>
-        <form class="admin-form manager-card invite-settings" id="inviteForm">
-          <h2>Mensagem do convite</h2>
-          <label>Texto<textarea id="inviteMessage" rows="4" required></textarea></label>
-          <label>Imagem ou foto<input id="inviteImage" type="text" placeholder="assets/images/familia-sentada.png"></label>
-          <label>Carregar imagem do dispositivo<input id="inviteImageUpload" type="file" accept="image/*"></label>
-          <figure class="invite-image-preview" id="inviteImagePreview" hidden>
-            <img alt="Pre-visualizacao da imagem do convite">
-          </figure>
-          <label class="check-field"><input id="showTableInput" type="checkbox" checked> Mostrar mesa ao convidado</label>
-          <button class="primary-link full" type="submit">Actualizar modelo</button>
-        </form>
+      <section class="admin-section manager-grid" data-panel="invites" hidden>
+        <header class="panel-heading full-row">
+          <div>
+            <p class="overline">Passo 3</p>
+            <h2>Convites e QR codes</h2>
+            <p>Defina a mensagem, carregue a imagem e envie o link ou QR code de cada convidado.</p>
+          </div>
+        </header>
+
+        <details class="manager-card task-card invite-settings" open>
+          <summary>Modelo do convite</summary>
+          <form class="admin-form" id="inviteForm">
+            <label>Texto<textarea id="inviteMessage" rows="4" required></textarea></label>
+            <label>Imagem ou foto<input id="inviteImage" type="text" placeholder="assets/images/familia-sentada.png"></label>
+            <label>Carregar imagem do dispositivo<input id="inviteImageUpload" type="file" accept="image/*"></label>
+            <figure class="invite-image-preview" id="inviteImagePreview" hidden>
+              <img alt="Pre-visualizacao da imagem do convite">
+            </figure>
+            <label class="check-field"><input id="showTableInput" type="checkbox" checked> Mostrar mesa ao convidado</label>
+            <button class="primary-link full" type="submit">Guardar modelo</button>
+          </form>
+        </details>
+
         <div class="invite-list" id="inviteList" aria-live="polite"></div>
       </section>
 
       <p class="admin-status" id="dashboardStatus" aria-live="polite"></p>
+
+      <div class="mobile-menu-backdrop" id="mobileMenuBackdrop" hidden></div>
+      <nav class="mobile-module-sheet" id="mobileModuleSheet" hidden aria-label="Escolher modulo">
+        <p class="overline">Modulos</p>
+        <button class="module-option is-active" type="button" data-tab="rsvps">
+          <span>01</span>
+          <strong>Respostas</strong>
+          <small>Confirmacoes e mensagens do mural</small>
+        </button>
+        <button class="module-option" type="button" data-tab="tables">
+          <span>02</span>
+          <strong>Mesas</strong>
+          <small>Convidados, importacao e lugares</small>
+        </button>
+        <button class="module-option" type="button" data-tab="invites">
+          <span>03</span>
+          <strong>Links</strong>
+          <small>Mensagem, imagem e QR codes</small>
+        </button>
+      </nav>
+
+      <nav class="mobile-bottom-nav" aria-label="Menu rapido do painel">
+        <button class="bottom-menu-button" id="mobileMenuButton" type="button" aria-controls="mobileModuleSheet" aria-expanded="false">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <strong>Menu</strong>
+        </button>
+        <button class="bottom-tab is-active" type="button" data-tab="rsvps">
+          <span>1</span>
+          Respostas
+        </button>
+        <button class="bottom-tab" type="button" data-tab="tables">
+          <span>2</span>
+          Mesas
+        </button>
+        <button class="bottom-tab" type="button" data-tab="invites">
+          <span>3</span>
+          Links
+        </button>
+      </nav>
     </section>
   </main>
 

@@ -42,6 +42,7 @@ let customInviteMessage = (params.get("msg") || "").trim();
 let customInviteImage = (params.get("img") || "").trim();
 let shouldShowTable = params.get("vermesa") !== "0";
 const wallStorageKey = "joyce-edson-guest-wall";
+const plannerStorageKey = "joyce-edson-admin-data";
 const supabaseSettings = window.WEDDING_SUPABASE || {};
 const hasSupabaseConfig = Boolean(supabaseSettings.url && supabaseSettings.anonKey && window.supabase);
 const weddingDb = hasSupabaseConfig
@@ -63,7 +64,10 @@ const fallbackWallMessages = [
 ];
 
 async function hydrateInviteData() {
-  if (!weddingDb) return;
+  if (!weddingDb) {
+    hydrateLocalInviteData();
+    return;
+  }
 
   const settingsRequest = weddingDb
     .from("invite_settings")
@@ -82,11 +86,14 @@ async function hydrateInviteData() {
 
   const settingsValue = settingsResult.status === "fulfilled" ? settingsResult.value : null;
   const inviteValue = inviteResult.status === "fulfilled" ? inviteResult.value : null;
+  let foundSettings = false;
+  let foundGuest = false;
 
   if (settingsValue && !settingsValue.error && settingsValue.data) {
     customInviteMessage = settingsValue.data.message || customInviteMessage;
     customInviteImage = settingsValue.data.image || customInviteImage;
     shouldShowTable = settingsValue.data.show_table !== false;
+    foundSettings = true;
   }
 
   if (inviteValue && !inviteValue.error && inviteValue.data?.length) {
@@ -96,6 +103,37 @@ async function hydrateInviteData() {
     maxGuests = Math.max(1, Number(invite.max_companions || invite.group_size || maxGuests));
     table = Number(invite.table_number || table || 0);
     tableNameFromLink = invite.table_name || tableNameFromLink;
+    foundGuest = true;
+  }
+
+  if (!foundSettings || !foundGuest) hydrateLocalInviteData();
+}
+
+function hydrateLocalInviteData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(plannerStorageKey) || "{}");
+    const settings = saved.inviteSettings || {};
+    const guestRow = (saved.guests || []).find((item) => item.invite_token === inviteToken);
+    const tableRow = guestRow?.table_id
+      ? (saved.tables || []).find((item) => item.id === guestRow.table_id)
+      : null;
+
+    customInviteMessage = settings.message || customInviteMessage;
+    customInviteImage = settings.image || customInviteImage;
+    shouldShowTable = settings.showTable !== false;
+
+    if (guestRow) {
+      guestFromLink = guestRow.name || guestFromLink;
+      guest = guestFromLink || guest;
+      maxGuests = Math.max(1, Number(guestRow.max_companions || guestRow.group_size || maxGuests));
+    }
+
+    if (tableRow) {
+      table = Number(tableRow.number || table || 0);
+      tableNameFromLink = tableRow.name || tableNameFromLink;
+    }
+  } catch {
+    // Local demo data is optional.
   }
 }
 
@@ -442,6 +480,15 @@ function setupCopyButtons() {
   });
 }
 
+function renderInviteQrFooter() {
+  const qr = document.getElementById("inviteQrFooter");
+  if (!qr || !inviteToken) return;
+
+  const image = qr.querySelector("img");
+  image.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(window.location.href)}`;
+  qr.hidden = false;
+}
+
 function setupRsvp() {
   document.getElementById("rsvpForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -484,10 +531,12 @@ async function initPage() {
   setupModals();
   setupCopyButtons();
   setupRsvp();
+  renderInviteQrFooter();
   updateCountdown();
   setInterval(updateCountdown, 1000);
   await hydrateInviteData();
   setGuestDetails();
+  renderInviteQrFooter();
 }
 
 initPage();
