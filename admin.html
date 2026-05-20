@@ -95,6 +95,10 @@
           <h2>Mensagem do convite</h2>
           <label>Texto<textarea id="inviteMessage" rows="4" required></textarea></label>
           <label>Imagem ou foto<input id="inviteImage" type="text" placeholder="assets/images/familia-sentada.png"></label>
+          <label>Carregar imagem do dispositivo<input id="inviteImageUpload" type="file" accept="image/*"></label>
+          <figure class="invite-image-preview" id="inviteImagePreview" hidden>
+            <img alt="Pre-visualizacao da imagem do convite">
+          </figure>
           <label class="check-field"><input id="showTableInput" type="checkbox" checked> Mostrar mesa ao convidado</label>
           <button class="primary-link full" type="submit">Actualizar modelo</button>
         </form>
@@ -106,6 +110,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/admin.js"></script>
 </body>

@@ -46,7 +46,8 @@
   text-transform: uppercase;
 }
 
-.admin-form input {
+.admin-form input,
+.admin-form textarea {
   width: 100%;
   border: 1px solid var(--gold-soft);
   background: #fff;
@@ -55,6 +56,11 @@
   outline: 0;
   text-transform: none;
   letter-spacing: 0;
+}
+
+.admin-form input[type="file"] {
+  padding: 12px;
+  font-size: .82rem;
 }
 
 .admin-dashboard {
@@ -391,6 +397,112 @@
   border: 1px solid rgba(195, 154, 85, .28);
   background: rgba(255, 250, 244, .95);
   box-shadow: 0 12px 34px rgba(43, 33, 29, .08);
+}
+
+.invite-card input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invite-image-preview {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--gold-soft);
+  background: #fff;
+}
+
+.invite-image-preview[hidden] {
+  display: none;
+}
+
+.invite-image-preview img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.invite-qr {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--gold-soft);
+  background: #fff;
+}
+
+.invite-qr canvas,
+.invite-qr .qr-fallback {
+  width: 112px !important;
+  height: 112px !important;
+}
+
+.invite-qr .qr-fallback {
+  object-fit: contain;
+}
+
+.invite-qr button {
+  min-height: 40px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gold);
+  padding: 0 14px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 559px) {
+  .admin-shell {
+    padding: 16px 12px 36px;
+  }
+
+  .admin-login {
+    margin-top: 4vh;
+  }
+
+  .admin-header-actions,
+  .admin-actions,
+  .table-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .admin-header-actions .secondary-link,
+  .admin-actions button,
+  .admin-actions a,
+  .table-actions .secondary-link {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat-card {
+    padding: 14px 12px;
+  }
+
+  .stat-card strong {
+    font-size: 1.9rem;
+  }
+
+  .invite-qr {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .invite-qr button {
+    width: 100%;
+  }
 }
 
 @media (min-width: 760px) {

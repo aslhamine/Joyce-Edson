@@ -40,6 +40,8 @@ const autoSeatButton = document.getElementById("autoSeatButton");
 const inviteForm = document.getElementById("inviteForm");
 const inviteMessage = document.getElementById("inviteMessage");
 const inviteImage = document.getElementById("inviteImage");
+const inviteImageUpload = document.getElementById("inviteImageUpload");
+const inviteImagePreview = document.getElementById("inviteImagePreview");
 const showTableInput = document.getElementById("showTableInput");
 const inviteList = document.getElementById("inviteList");
 
@@ -72,6 +74,66 @@ function formatDate(value) {
 
 function setStatus(message) {
   dashboardStatus.textContent = message || "";
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", reject);
+    reader.readAsDataURL(file);
+  });
+}
+
+function updateInviteImagePreview(src) {
+  if (!inviteImagePreview) return;
+
+  const image = inviteImagePreview.querySelector("img");
+  if (!src) {
+    inviteImagePreview.hidden = true;
+    image.removeAttribute("src");
+    return;
+  }
+
+  image.src = src;
+  inviteImagePreview.hidden = false;
+}
+
+async function uploadInviteImage(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    setStatus("Escolha um ficheiro de imagem valido.");
+    return;
+  }
+
+  setStatus("A carregar imagem...");
+
+  if (client) {
+    const extension = file.name.split(".").pop() || "jpg";
+    const path = `convites/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const { error } = await client.storage
+      .from("invite-assets")
+      .upload(path, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: true
+      });
+
+    if (!error) {
+      const { data } = client.storage.from("invite-assets").getPublicUrl(path);
+      inviteImage.value = data.publicUrl;
+      updateInviteImagePreview(data.publicUrl);
+      setStatus("Imagem carregada. Actualize o modelo para guardar.");
+      return;
+    }
+
+    setStatus(`Nao foi possivel enviar para o Supabase Storage: ${error.message}`);
+  }
+
+  const dataUrl = await readFileAsDataUrl(file);
+  inviteImage.value = dataUrl;
+  updateInviteImagePreview(dataUrl);
+  setStatus("Imagem preparada neste navegador. Actualize o modelo para guardar.");
 }
 
 function showDashboard() {
@@ -344,9 +406,11 @@ function buildInviteUrl(guest) {
   url.searchParams.set("nome", guest.name);
   url.searchParams.set("limite", String(guest.max_companions || guest.group_size || 1));
   url.searchParams.set("gid", guest.invite_token);
-  url.searchParams.set("msg", inviteSettings.message);
-  url.searchParams.set("img", inviteSettings.image);
   url.searchParams.set("vermesa", inviteSettings.showTable ? "1" : "0");
+  if (!client) {
+    url.searchParams.set("msg", inviteSettings.message);
+    url.searchParams.set("img", inviteSettings.image);
+  }
   if (table) {
     url.searchParams.set("mesa", String(table.number));
     url.searchParams.set("mesaNome", table.name);
@@ -358,6 +422,7 @@ function renderInvites() {
   inviteMessage.value = inviteSettings.message;
   inviteImage.value = inviteSettings.image;
   showTableInput.checked = inviteSettings.showTable;
+  updateInviteImagePreview(inviteSettings.image);
 
   inviteList.innerHTML = guests.map((guest) => {
     const inviteUrl = buildInviteUrl(guest);
@@ -373,6 +438,10 @@ function renderInvites() {
           <span>${table ? `Mesa ${table.number} · ${table.name}` : "Mesa a confirmar"} · limite ${guest.max_companions}</span>
         </div>
         <input readonly value="${escapeHtml(inviteUrl)}">
+        <div class="invite-qr">
+          <canvas data-qr-code="${escapeHtml(inviteUrl)}" aria-label="QR code do convite"></canvas>
+          <button type="button" data-download-qr="${escapeHtml(guest.id)}">Descarregar QR</button>
+        </div>
         <div class="admin-actions">
           <a href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>
           <a href="${mailto}">E-mail</a>
@@ -381,6 +450,31 @@ function renderInvites() {
       </article>
     `;
   }).join("");
+
+  renderQrCodes();
+}
+
+function renderQrCodes() {
+  if (!window.QRCode) {
+    inviteList.querySelectorAll(".invite-qr").forEach((item) => {
+      const canvas = item.querySelector("canvas[data-qr-code]");
+      const src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(canvas.dataset.qrCode)}`;
+      canvas.hidden = true;
+      item.insertAdjacentHTML("afterbegin", `<img class="qr-fallback" src="${src}" alt="QR code do convite">`);
+    });
+    return;
+  }
+
+  inviteList.querySelectorAll("canvas[data-qr-code]").forEach((canvas) => {
+    window.QRCode.toCanvas(canvas, canvas.dataset.qrCode, {
+      width: 148,
+      margin: 1,
+      color: {
+        dark: "#2a211d",
+        light: "#fffaf4"
+      }
+    });
+  });
 }
 
 function renderActiveTab() {
@@ -612,6 +706,14 @@ inviteForm.addEventListener("submit", (event) => {
   setStatus("Modelo de convite actualizado.");
 });
 
+inviteImage.addEventListener("input", () => {
+  updateInviteImagePreview(inviteImage.value.trim());
+});
+
+inviteImageUpload.addEventListener("change", () => {
+  void uploadInviteImage(inviteImageUpload.files?.[0]);
+});
+
 tableBoard.addEventListener("dragstart", (event) => {
   const chip = event.target.closest("[data-guest-id]");
   if (!chip) return;
@@ -665,10 +767,29 @@ tableBoard.addEventListener("click", (event) => {
 
 inviteList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-copy-link]");
-  if (!button) return;
-  await navigator.clipboard.writeText(button.dataset.copyLink);
-  button.textContent = "Copiado";
-  setTimeout(() => { button.textContent = "Copiar link"; }, 1400);
+  const qrButton = event.target.closest("[data-download-qr]");
+
+  if (button) {
+    await navigator.clipboard.writeText(button.dataset.copyLink);
+    button.textContent = "Copiado";
+    setTimeout(() => { button.textContent = "Copiar link"; }, 1400);
+  }
+
+  if (qrButton) {
+    const card = qrButton.closest(".invite-card");
+    const guestName = card.querySelector("strong")?.textContent || "convite";
+    const canvas = card.querySelector("canvas");
+    const fallback = card.querySelector(".qr-fallback");
+
+    const link = document.createElement("a");
+    link.download = `qr-${guestName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
+    link.href = fallback?.src || canvas.toDataURL("image/png");
+    if (fallback) {
+      link.target = "_blank";
+      link.rel = "noreferrer";
+    }
+    link.click();
+  }
 });
 
 init();

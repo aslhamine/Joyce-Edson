@@ -32,15 +32,15 @@ const gifts = [
 ];
 
 const params = new URLSearchParams(window.location.search);
-const guestFromLink = (params.get("nome") || "").trim();
-const guest = guestFromLink || "convidado(a)";
-const table = Number(params.get("mesa"));
-const tableNameFromLink = (params.get("mesaNome") || "").trim();
+let guestFromLink = (params.get("nome") || "").trim();
+let guest = guestFromLink || "convidado(a)";
+let table = Number(params.get("mesa"));
+let tableNameFromLink = (params.get("mesaNome") || "").trim();
 const inviteToken = (params.get("gid") || "").trim();
-const maxGuests = Math.max(1, Number(params.get("limite") || 1));
-const customInviteMessage = (params.get("msg") || "").trim();
-const customInviteImage = (params.get("img") || "").trim();
-const shouldShowTable = params.get("vermesa") !== "0";
+let maxGuests = Math.max(1, Number(params.get("limite") || 1));
+let customInviteMessage = (params.get("msg") || "").trim();
+let customInviteImage = (params.get("img") || "").trim();
+let shouldShowTable = params.get("vermesa") !== "0";
 const wallStorageKey = "joyce-edson-guest-wall";
 const supabaseSettings = window.WEDDING_SUPABASE || {};
 const hasSupabaseConfig = Boolean(supabaseSettings.url && supabaseSettings.anonKey && window.supabase);
@@ -62,6 +62,43 @@ const fallbackWallMessages = [
   }
 ];
 
+async function hydrateInviteData() {
+  if (!weddingDb) return;
+
+  const settingsRequest = weddingDb
+    .from("invite_settings")
+    .select("message, image, show_table")
+    .eq("id", "default")
+    .maybeSingle();
+
+  const inviteRequest = inviteToken
+    ? weddingDb.rpc("get_invite_by_token", { token_value: inviteToken })
+    : Promise.resolve(null);
+
+  const [settingsResult, inviteResult] = await Promise.allSettled([
+    settingsRequest,
+    inviteRequest
+  ]);
+
+  const settingsValue = settingsResult.status === "fulfilled" ? settingsResult.value : null;
+  const inviteValue = inviteResult.status === "fulfilled" ? inviteResult.value : null;
+
+  if (settingsValue && !settingsValue.error && settingsValue.data) {
+    customInviteMessage = settingsValue.data.message || customInviteMessage;
+    customInviteImage = settingsValue.data.image || customInviteImage;
+    shouldShowTable = settingsValue.data.show_table !== false;
+  }
+
+  if (inviteValue && !inviteValue.error && inviteValue.data?.length) {
+    const invite = inviteValue.data[0];
+    guestFromLink = invite.name || guestFromLink;
+    guest = guestFromLink || guest;
+    maxGuests = Math.max(1, Number(invite.max_companions || invite.group_size || maxGuests));
+    table = Number(invite.table_number || table || 0);
+    tableNameFromLink = invite.table_name || tableNameFromLink;
+  }
+}
+
 function getTableLabel() {
   if (!shouldShowTable) return "Mesa reservada";
   if (tableNameFromLink) return `Mesa ${tableNameFromLink}`;
@@ -81,11 +118,13 @@ function setGuestDetails() {
   const inviteMessage = document.getElementById("customInviteMessage");
   const heroImage = document.getElementById("heroImage");
 
-  if (guestFromLink) {
-    rsvpName.value = guestFromLink;
+  if (guestFromLink || inviteToken) {
+    rsvpName.value = guest;
     rsvpName.readOnly = true;
     rsvpName.classList.add("is-prefilled");
-    rsvpName.insertAdjacentHTML("afterend", '<span class="field-hint">Nome preenchido automaticamente pelo convite personalizado.</span>');
+    if (!document.getElementById("nameLockHint")) {
+      rsvpName.insertAdjacentHTML("afterend", '<span class="field-hint" id="nameLockHint">Nome preenchido automaticamente pelo convite personalizado.</span>');
+    }
   }
 
   guestCount.max = String(maxGuests);
@@ -435,14 +474,20 @@ window.addEventListener("load", () => {
   setTimeout(() => document.getElementById("loader").classList.add("is-hidden"), 900);
 });
 
-setGuestDetails();
-buildCalendar();
-renderGifts();
-renderGuestWall();
-setupMusic();
-setupReveal();
-setupModals();
-setupCopyButtons();
-setupRsvp();
-updateCountdown();
-setInterval(updateCountdown, 1000);
+async function initPage() {
+  setGuestDetails();
+  buildCalendar();
+  renderGifts();
+  renderGuestWall();
+  setupMusic();
+  setupReveal();
+  setupModals();
+  setupCopyButtons();
+  setupRsvp();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+  await hydrateInviteData();
+  setGuestDetails();
+}
+
+initPage();

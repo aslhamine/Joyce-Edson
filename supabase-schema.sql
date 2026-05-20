@@ -46,6 +46,19 @@ create table if not exists public.invite_settings (
   show_table boolean not null default true
 );
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'invite-assets',
+  'invite-assets',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
 create index if not exists invited_guests_table_id_idx on public.invited_guests (table_id);
 create index if not exists invited_guests_invite_token_idx on public.invited_guests (invite_token);
 
@@ -93,3 +106,62 @@ on public.invite_settings for all
 to authenticated
 using (true)
 with check (true);
+
+drop policy if exists "Public can read invite settings" on public.invite_settings;
+create policy "Public can read invite settings"
+on public.invite_settings for select
+to anon
+using (id = 'default');
+
+drop policy if exists "Public can read invite assets" on storage.objects;
+create policy "Public can read invite assets"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'invite-assets');
+
+drop policy if exists "Authenticated admins upload invite assets" on storage.objects;
+create policy "Authenticated admins upload invite assets"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'invite-assets');
+
+drop policy if exists "Authenticated admins update invite assets" on storage.objects;
+create policy "Authenticated admins update invite assets"
+on storage.objects for update
+to authenticated
+using (bucket_id = 'invite-assets')
+with check (bucket_id = 'invite-assets');
+
+drop policy if exists "Authenticated admins delete invite assets" on storage.objects;
+create policy "Authenticated admins delete invite assets"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'invite-assets');
+
+create or replace function public.get_invite_by_token(token_value text)
+returns table (
+  name text,
+  group_size integer,
+  max_companions integer,
+  table_number integer,
+  table_name text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    invited_guests.name,
+    invited_guests.group_size,
+    invited_guests.max_companions,
+    event_tables.number as table_number,
+    event_tables.name as table_name
+  from public.invited_guests
+  left join public.event_tables on event_tables.id = invited_guests.table_id
+  where invited_guests.invite_token = token_value
+  limit 1
+$$;
+
+revoke all on function public.get_invite_by_token(text) from public;
+grant execute on function public.get_invite_by_token(text) to anon, authenticated;
