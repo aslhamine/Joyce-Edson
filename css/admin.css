@@ -124,11 +124,18 @@
   text-transform: uppercase;
 }
 
-.admin-toolbar {
+.admin-toolbar,
+.admin-tabs {
   display: flex;
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+}
+
+.admin-tabs {
+  padding: 8px;
+  border: 1px solid rgba(195, 154, 85, .22);
+  background: rgba(255, 250, 244, .78);
 }
 
 .filter-button {
@@ -198,7 +205,11 @@
   gap: 8px;
 }
 
-.admin-actions button {
+.admin-actions button,
+.admin-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 38px;
   border: 1px solid var(--gold);
   border-radius: 999px;
@@ -223,6 +234,165 @@
   text-align: center;
 }
 
+.manager-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.manager-grid[hidden] {
+  display: none;
+}
+
+.manager-card {
+  padding: 18px;
+  border: 1px solid rgba(195, 154, 85, .28);
+  background: rgba(255, 250, 244, .95);
+  box-shadow: 0 12px 34px rgba(43, 33, 29, .08);
+}
+
+.manager-card h2 {
+  margin: 0 0 4px;
+  font-size: 1.8rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.import-card textarea,
+.invite-settings textarea,
+.invite-card input {
+  width: 100%;
+  border: 1px solid var(--gold-soft);
+  background: #fff;
+  color: var(--ink);
+  padding: 12px;
+  outline: 0;
+  resize: vertical;
+}
+
+.check-field {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 10px !important;
+  color: var(--muted);
+}
+
+.check-field input {
+  width: auto;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.table-board {
+  display: grid;
+  gap: 12px;
+}
+
+.table-column {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 220px;
+  padding: 14px;
+  border: 1px solid rgba(195, 154, 85, .28);
+  background: rgba(255, 250, 244, .95);
+  box-shadow: 0 12px 34px rgba(43, 33, 29, .08);
+}
+
+.table-column.is-full {
+  border-color: rgba(143, 85, 71, .44);
+}
+
+.table-column.unseated {
+  background: rgba(255, 255, 255, .82);
+}
+
+.table-column header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.table-column header strong,
+.invite-card strong,
+.guest-chip strong {
+  display: block;
+  color: var(--ink);
+}
+
+.table-column header span,
+.invite-card span,
+.guest-chip span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.table-column header button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--gold-soft);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--rose);
+  font-size: 1.2rem;
+}
+
+.table-guests {
+  display: grid;
+  gap: 10px;
+  min-height: 140px;
+}
+
+.guest-chip {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--gold-soft);
+  background: #fff;
+}
+
+.guest-chip button {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--rose);
+  padding: 0;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.invite-list {
+  display: grid;
+  gap: 12px;
+}
+
+.invite-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(195, 154, 85, .28);
+  background: rgba(255, 250, 244, .95);
+  box-shadow: 0 12px 34px rgba(43, 33, 29, .08);
+}
+
 @media (min-width: 760px) {
   .admin-shell {
     padding: 42px 28px 72px;
@@ -237,10 +407,33 @@
   }
 
   .admin-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .admin-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .table-actions,
+  .table-board,
+  .invite-list {
+    grid-column: 1 / -1;
+  }
+
+  .table-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .invite-settings {
+    grid-column: span 1;
+  }
+
+  .invite-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

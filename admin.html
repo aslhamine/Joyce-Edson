@@ -16,7 +16,7 @@
     <section class="admin-login" id="loginPanel" aria-labelledby="loginTitle">
       <p class="overline centered">Joyce & Edson</p>
       <h1 id="loginTitle">Painel dos Noivos</h1>
-      <p class="muted centered">Entrem com o utilizador criado no Supabase para aprovar mensagens e acompanhar confirmações.</p>
+      <p class="muted centered">Entrem com o utilizador criado no Supabase para aprovar mensagens e acompanhar confirmações. Para testes locais, use admin.html?local=1.</p>
       <form class="admin-form" id="loginForm">
         <label>Email<input id="adminEmail" type="email" autocomplete="email" required></label>
         <label>Palavra-passe<input id="adminPassword" type="password" autocomplete="current-password" required></label>
@@ -39,15 +39,68 @@
 
       <div class="admin-stats" id="adminStats" aria-live="polite"></div>
 
-      <div class="admin-toolbar">
-        <button class="filter-button is-active" type="button" data-filter="all">Todas</button>
-        <button class="filter-button" type="button" data-filter="pending">Por aprovar</button>
-        <button class="filter-button" type="button" data-filter="approved">Publicadas</button>
-        <button class="filter-button" type="button" data-filter="attending">Presentes</button>
-        <button class="filter-button" type="button" data-filter="declined">Ausentes</button>
-      </div>
+      <nav class="admin-tabs" aria-label="Areas do painel">
+        <button class="filter-button is-active" type="button" data-tab="rsvps">Confirmacoes</button>
+        <button class="filter-button" type="button" data-tab="tables">Mesas</button>
+        <button class="filter-button" type="button" data-tab="invites">Convites</button>
+      </nav>
 
-      <div class="admin-list" id="adminList" aria-live="polite"></div>
+      <section data-panel="rsvps">
+        <div class="admin-toolbar">
+          <button class="filter-button is-active" type="button" data-filter="all">Todas</button>
+          <button class="filter-button" type="button" data-filter="pending">Por aprovar</button>
+          <button class="filter-button" type="button" data-filter="approved">Publicadas</button>
+          <button class="filter-button" type="button" data-filter="attending">Presentes</button>
+          <button class="filter-button" type="button" data-filter="declined">Ausentes</button>
+        </div>
+        <div class="admin-list" id="adminList" aria-live="polite"></div>
+      </section>
+
+      <section class="manager-grid" data-panel="tables" hidden>
+        <form class="admin-form manager-card" id="guestForm">
+          <h2>Adicionar convidado</h2>
+          <label>Nome ou casal<input name="name" type="text" required></label>
+          <label>Telefone<input name="phone" type="tel" placeholder="+258"></label>
+          <label>E-mail<input name="email" type="email"></label>
+          <div class="form-row">
+            <label>Pessoas<input name="group_size" type="number" min="1" value="1" required></label>
+            <label>Limite RSVP<input name="max_companions" type="number" min="1" value="1" required></label>
+          </div>
+          <button class="primary-link full" type="submit">Adicionar</button>
+        </form>
+
+        <form class="admin-form manager-card" id="tableForm">
+          <h2>Criar mesa</h2>
+          <label>Numero<input name="number" type="number" min="1" required></label>
+          <label>Nome<input name="name" type="text" placeholder="Rosa, Familia, Amigos"></label>
+          <label>Capacidade<input name="capacity" type="number" min="1" value="8" required></label>
+          <button class="primary-link full" type="submit">Criar mesa</button>
+        </form>
+
+        <section class="manager-card import-card">
+          <h2>Importar lista</h2>
+          <p class="muted">Uma linha por convidado: nome, telefone, email, pessoas, limite.</p>
+          <textarea id="guestImport" rows="5" placeholder="Carlos & Anita, +258840000001, email@exemplo.com, 2, 2"></textarea>
+          <button class="secondary-link" id="importButton" type="button">Importar convidados</button>
+        </section>
+
+        <div class="table-actions">
+          <button class="secondary-link dark" id="autoSeatButton" type="button">Distribuir automaticamente</button>
+        </div>
+        <div class="table-board" id="tableBoard" aria-live="polite"></div>
+      </section>
+
+      <section class="manager-grid" data-panel="invites" hidden>
+        <form class="admin-form manager-card invite-settings" id="inviteForm">
+          <h2>Mensagem do convite</h2>
+          <label>Texto<textarea id="inviteMessage" rows="4" required></textarea></label>
+          <label>Imagem ou foto<input id="inviteImage" type="text" placeholder="assets/images/familia-sentada.png"></label>
+          <label class="check-field"><input id="showTableInput" type="checkbox" checked> Mostrar mesa ao convidado</label>
+          <button class="primary-link full" type="submit">Actualizar modelo</button>
+        </form>
+        <div class="invite-list" id="inviteList" aria-live="polite"></div>
+      </section>
+
       <p class="admin-status" id="dashboardStatus" aria-live="polite"></p>
     </section>
   </main>

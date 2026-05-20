@@ -35,6 +35,12 @@ const params = new URLSearchParams(window.location.search);
 const guestFromLink = (params.get("nome") || "").trim();
 const guest = guestFromLink || "convidado(a)";
 const table = Number(params.get("mesa"));
+const tableNameFromLink = (params.get("mesaNome") || "").trim();
+const inviteToken = (params.get("gid") || "").trim();
+const maxGuests = Math.max(1, Number(params.get("limite") || 1));
+const customInviteMessage = (params.get("msg") || "").trim();
+const customInviteImage = (params.get("img") || "").trim();
+const shouldShowTable = params.get("vermesa") !== "0";
 const wallStorageKey = "joyce-edson-guest-wall";
 const supabaseSettings = window.WEDDING_SUPABASE || {};
 const hasSupabaseConfig = Boolean(supabaseSettings.url && supabaseSettings.anonKey && window.supabase);
@@ -57,16 +63,23 @@ const fallbackWallMessages = [
 ];
 
 function getTableLabel() {
+  if (!shouldShowTable) return "Mesa reservada";
+  if (tableNameFromLink) return `Mesa ${tableNameFromLink}`;
   return table && tables[table] ? `Mesa ${tables[table]}` : "Mesa a confirmar";
 }
 
 function getTableName() {
+  if (tableNameFromLink) return tableNameFromLink;
   return table && tables[table] ? tables[table] : null;
 }
 
 function setGuestDetails() {
   document.getElementById("guestName").textContent = guest;
   const rsvpName = document.getElementById("rsvpName");
+  const guestCount = document.getElementById("rsvpGuestCount");
+  const guestLimitHint = document.getElementById("guestLimitHint");
+  const inviteMessage = document.getElementById("customInviteMessage");
+  const heroImage = document.getElementById("heroImage");
 
   if (guestFromLink) {
     rsvpName.value = guestFromLink;
@@ -75,10 +88,26 @@ function setGuestDetails() {
     rsvpName.insertAdjacentHTML("afterend", '<span class="field-hint">Nome preenchido automaticamente pelo convite personalizado.</span>');
   }
 
-  if (table && tables[table]) {
+  guestCount.max = String(maxGuests);
+  guestCount.value = String(Math.min(maxGuests, Number(guestCount.value || 1)));
+  guestLimitHint.textContent = `Este convite permite confirmar ate ${maxGuests} pessoa(s).`;
+
+  if (customInviteMessage) {
+    inviteMessage.textContent = customInviteMessage;
+    inviteMessage.hidden = false;
+  }
+
+  if (customInviteImage) {
+    heroImage.src = customInviteImage;
+  }
+
+  if (shouldShowTable && (tableNameFromLink || (table && tables[table]))) {
     document.getElementById("seatNumber").textContent = `Mesa ${table}`;
-    document.getElementById("seatFlower").textContent = tables[table];
+    document.getElementById("seatFlower").textContent = tableNameFromLink || tables[table];
     document.title = `Convite para ${guest} | Joyce & Edson`;
+  } else if (!shouldShowTable) {
+    document.getElementById("seatNumber").textContent = "Lugar reservado";
+    document.getElementById("seatFlower").textContent = "Os noivos cuidaram de tudo";
   }
 }
 
@@ -228,8 +257,23 @@ async function renderGuestWall() {
   `).join("");
 }
 
-async function saveRsvp({ name, phone, answer, message }) {
+async function saveRsvp({ name, phone, answer, message, guestCount }) {
   if (!weddingDb) {
+    const saved = JSON.parse(localStorage.getItem("joyce-edson-rsvps") || "[]");
+    saved.unshift({
+      id: crypto.randomUUID(),
+      name,
+      phone,
+      table_number: table || null,
+      table_name: getTableName(),
+      guest_count: guestCount,
+      invite_token: inviteToken || null,
+      answer,
+      message: message || null,
+      is_approved: false,
+      created_at: new Date().toISOString()
+    });
+    localStorage.setItem("joyce-edson-rsvps", JSON.stringify(saved));
     saveWallMessageLocally({ name, message });
     return { saved: false, reason: "local" };
   }
@@ -239,6 +283,8 @@ async function saveRsvp({ name, phone, answer, message }) {
     phone: phone || null,
     table_number: table || null,
     table_name: getTableName(),
+    guest_count: guestCount,
+    invite_token: inviteToken || null,
     answer,
     message: message || null
   });
@@ -272,13 +318,14 @@ function saveWallMessageLocally({ name, message }) {
   renderGuestWall();
 }
 
-function buildWhatsappUrl({ name, phone, answer, message }) {
-  const tableText = table && tables[table] ? `Mesa ${table} - ${tables[table]}` : "Mesa a confirmar";
+function buildWhatsappUrl({ name, phone, answer, message, guestCount }) {
+  const tableText = getTableLabel();
   const lines = [
     "Confirmação de Presença - Joyce & Edson",
     "",
     `Nome: ${name}`,
     `Telefone: ${phone || "Não informado"}`,
+    `Pessoas: ${guestCount}`,
     `Resposta: ${answer === "sim" ? "Sim, estarei presente" : "Não poderei comparecer"}`,
     `Lugar: ${tableText}`,
     message ? `Mensagem: ${message}` : ""
@@ -287,19 +334,19 @@ function buildWhatsappUrl({ name, phone, answer, message }) {
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
-function showRsvpThanks({ name, phone, answer, message, saved }) {
+function showRsvpThanks({ name, phone, answer, message, guestCount, saved }) {
   const form = document.getElementById("rsvpForm");
   const thanks = document.getElementById("rsvpThanks");
   const tableLabel = getTableLabel();
   const isAttending = answer === "sim";
-  const whatsappUrl = buildWhatsappUrl({ name, phone, answer, message });
+  const whatsappUrl = buildWhatsappUrl({ name, phone, answer, message, guestCount });
 
   form.classList.add("is-submitted");
   thanks.hidden = false;
   thanks.innerHTML = `
     <span class="sparkles">✦ ✧ ✦</span>
     <h3>${isAttending ? `Obrigado, ${escapeHtml(name)}!` : `Sentiremos a sua falta, ${escapeHtml(name)}.`}</h3>
-    <p>${isAttending ? `Reservámos o seu lugar na ${escapeHtml(tableLabel)}. Até 22 de Agosto — mal podemos esperar!` : "Obrigado pela resposta. O vosso carinho continua connosco neste dia tão especial."}</p>
+    <p>${isAttending ? `Reservámos ${guestCount} lugar(es) na ${escapeHtml(tableLabel)}. Até 22 de Agosto - mal podemos esperar!` : "Obrigado pela resposta. O vosso carinho continua connosco neste dia tão especial."}</p>
     <p>${saved ? "A resposta ficou guardada no painel dos noivos." : "A resposta foi registada neste dispositivo, mas ainda não chegou ao painel dos noivos. Por favor, envie também pelo WhatsApp."}</p>
     <a class="secondary-link" href="${whatsappUrl}" target="_blank" rel="noreferrer">Enviar também pelo WhatsApp</a>
   `;
@@ -363,20 +410,22 @@ function setupRsvp() {
     const phone = document.getElementById("rsvpPhone").value.trim();
     const answer = document.getElementById("rsvpAnswer").value;
     const message = document.getElementById("rsvpMessage").value.trim();
-    const tableText = table && tables[table] ? `Mesa ${table} - ${tables[table]}` : "Mesa a confirmar";
+    const guestCount = Math.min(maxGuests, Math.max(1, Number(document.getElementById("rsvpGuestCount").value || 1)));
+    const tableText = getTableLabel();
 
     const lines = [
       "Confirmação de Presença - Joyce & Edson",
       "",
       `Nome: ${name}`,
       `Telefone: ${phone || "Não informado"}`,
+      `Pessoas: ${guestCount}`,
       `Resposta: ${answer === "sim" ? "Sim, estarei presente" : "Não poderei comparecer"}`,
       `Lugar: ${tableText}`,
       message ? `Mensagem: ${message}` : ""
     ].filter(Boolean);
 
-    const result = await saveRsvp({ name, phone, answer, message });
-    showRsvpThanks({ name, phone, answer, message, saved: result.saved });
+    const result = await saveRsvp({ name, phone, answer, message, guestCount });
+    showRsvpThanks({ name, phone, answer, message, guestCount, saved: result.saved });
     if (answer === "sim") launchConfetti();
 
   });

@@ -36,7 +36,7 @@
 
   <header class="hero" id="inicio">
     <picture class="hero-media">
-      <img src="assets/images/familia-sentada.png" alt="Joyce, Edson e o filho Kayler juntos">
+      <img id="heroImage" src="assets/images/familia-sentada.png" alt="Joyce, Edson e o filho Kayler juntos">
     </picture>
     <div class="hero-shade"></div>
     <div class="hero-content reveal">
@@ -72,6 +72,7 @@
           <p>
             Há histórias que nascem em silêncio e crescem com gestos pequenos: uma mão dada, uma promessa cuidada, uma família que se constrói todos os dias.
           </p>
+          <p id="customInviteMessage" hidden></p>
           <p>
             No dia 22 de Agosto de 2026, queremos celebrar o amor que nos trouxe até aqui. A sua presença será uma bênção, um abraço e uma memória guardada para sempre.
           </p>
@@ -227,6 +228,10 @@
           <h2 id="rsvp-title" class="centered">A sua presença é a nossa alegria</h2>
           <label>Nome completo<input id="rsvpName" type="text" autocomplete="name" required></label>
           <label>Telefone<input id="rsvpPhone" type="tel" autocomplete="tel" placeholder="+258"></label>
+          <label>Quantas pessoas vão?
+            <input id="rsvpGuestCount" type="number" min="1" value="1" required>
+            <span class="field-hint" id="guestLimitHint"></span>
+          </label>
           <label>Confirma presença?
             <select id="rsvpAnswer" required>
               <option value="">Seleccione</option>

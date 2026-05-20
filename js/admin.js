@@ -1,6 +1,26 @@
 const settings = window.WEDDING_SUPABASE || {};
-const hasConfig = Boolean(settings.url && settings.anonKey && window.supabase);
+const forceLocalMode = new URLSearchParams(window.location.search).get("local") === "1";
+const hasConfig = !forceLocalMode && Boolean(settings.url && settings.anonKey && window.supabase);
 const client = hasConfig ? window.supabase.createClient(settings.url, settings.anonKey) : null;
+
+const defaultTables = [
+  { id: crypto.randomUUID(), number: 1, name: "Rosa", capacity: 8 },
+  { id: crypto.randomUUID(), number: 2, name: "Gardenia", capacity: 8 },
+  { id: crypto.randomUUID(), number: 3, name: "Jasmim", capacity: 8 },
+  { id: crypto.randomUUID(), number: 4, name: "Tulipa", capacity: 8 }
+];
+
+const demoGuests = [
+  { id: crypto.randomUUID(), name: "Carlos & Anita", phone: "+258 84 000 0001", email: "", group_size: 2, max_companions: 2, table_id: null, invite_token: crypto.randomUUID(), status: "pending" },
+  { id: crypto.randomUUID(), name: "Tia Lurdes", phone: "+258 84 000 0002", email: "", group_size: 1, max_companions: 1, table_id: null, invite_token: crypto.randomUUID(), status: "pending" }
+];
+
+const storageKey = "joyce-edson-admin-data";
+const inviteDefaults = {
+  message: "Com carinho, convidamos para celebrar o casamento de Joyce & Edson no dia 22 de Agosto de 2026.",
+  image: "assets/images/familia-sentada.png",
+  showTable: true
+};
 
 const loginPanel = document.getElementById("loginPanel");
 const dashboardPanel = document.getElementById("dashboardPanel");
@@ -11,8 +31,24 @@ const adminList = document.getElementById("adminList");
 const adminStats = document.getElementById("adminStats");
 const logoutButton = document.getElementById("logoutButton");
 const refreshButton = document.getElementById("refreshButton");
+const tableBoard = document.getElementById("tableBoard");
+const guestForm = document.getElementById("guestForm");
+const guestImport = document.getElementById("guestImport");
+const importButton = document.getElementById("importButton");
+const tableForm = document.getElementById("tableForm");
+const autoSeatButton = document.getElementById("autoSeatButton");
+const inviteForm = document.getElementById("inviteForm");
+const inviteMessage = document.getElementById("inviteMessage");
+const inviteImage = document.getElementById("inviteImage");
+const showTableInput = document.getElementById("showTableInput");
+const inviteList = document.getElementById("inviteList");
+
 let currentFilter = "all";
+let activeTab = "rsvps";
 let rsvps = [];
+let guests = [];
+let tables = [];
+let inviteSettings = { ...inviteDefaults };
 let refreshTimer;
 
 function escapeHtml(value) {
@@ -48,6 +84,151 @@ function showLogin() {
   dashboardPanel.hidden = true;
 }
 
+function loadLocalData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    guests = saved.guests?.length ? saved.guests : demoGuests;
+    tables = saved.tables?.length ? saved.tables : defaultTables;
+    inviteSettings = { ...inviteDefaults, ...(saved.inviteSettings || {}) };
+  } catch {
+    guests = demoGuests;
+    tables = defaultTables;
+    inviteSettings = { ...inviteDefaults };
+  }
+
+  autoSeatGuests(false);
+}
+
+function saveLocalData() {
+  localStorage.setItem(storageKey, JSON.stringify({ guests, tables, inviteSettings }));
+}
+
+async function loadPlannerData() {
+  if (!client) return;
+
+  const [tableResult, guestResult, settingsResult] = await Promise.all([
+    client.from("event_tables").select("*").order("number", { ascending: true }),
+    client.from("invited_guests").select("*").order("name", { ascending: true }),
+    client.from("invite_settings").select("*").eq("id", "default").maybeSingle()
+  ]);
+
+  if (!tableResult.error && tableResult.data?.length) tables = tableResult.data.map(normalizeTable);
+  if (!guestResult.error && guestResult.data?.length) guests = guestResult.data.map(normalizeGuest);
+  if (!settingsResult.error && settingsResult.data) {
+    inviteSettings = {
+      message: settingsResult.data.message || inviteDefaults.message,
+      image: settingsResult.data.image || inviteDefaults.image,
+      showTable: settingsResult.data.show_table !== false
+    };
+  }
+
+  autoSeatGuests(false);
+}
+
+async function savePlannerData() {
+  saveLocalData();
+  if (!client) return;
+
+  const tableRows = tables.map((table) => ({
+    id: table.id,
+    number: table.number,
+    name: table.name,
+    capacity: table.capacity
+  }));
+  const guestRows = guests.map((guest) => ({
+    id: guest.id,
+    name: guest.name,
+    phone: guest.phone || null,
+    email: guest.email || null,
+    group_size: guest.group_size,
+    max_companions: guest.max_companions,
+    table_id: guest.table_id || null,
+    invite_token: guest.invite_token,
+    status: guest.status || "pending"
+  }));
+
+  await Promise.all([
+    tableRows.length ? client.from("event_tables").upsert(tableRows) : Promise.resolve(),
+    guestRows.length ? client.from("invited_guests").upsert(guestRows) : Promise.resolve(),
+    client.from("invite_settings").upsert({
+      id: "default",
+      message: inviteSettings.message,
+      image: inviteSettings.image,
+      show_table: inviteSettings.showTable
+    })
+  ]);
+}
+
+function normalizeGuest(row) {
+  return {
+    id: row.id || crypto.randomUUID(),
+    name: row.name || row.nome || "Convidado",
+    phone: row.phone || row.telefone || "",
+    email: row.email || "",
+    group_size: Number(row.group_size || row.pessoas || row.quantity || 1),
+    max_companions: Number(row.max_companions || row.limite || row.group_size || row.pessoas || 1),
+    table_id: row.table_id || null,
+    invite_token: row.invite_token || crypto.randomUUID(),
+    status: row.status || "pending"
+  };
+}
+
+function normalizeTable(row) {
+  return {
+    id: row.id || crypto.randomUUID(),
+    number: Number(row.number || row.numero || tables.length + 1),
+    name: row.name || row.nome || `Mesa ${row.number || tables.length + 1}`,
+    capacity: Number(row.capacity || row.capacidade || 8)
+  };
+}
+
+function getTableById(id) {
+  return tables.find((item) => item.id === id);
+}
+
+function getTableOccupancy(tableId) {
+  return guests
+    .filter((guest) => guest.table_id === tableId)
+    .reduce((total, guest) => total + Number(guest.group_size || 1), 0);
+}
+
+function canSeatGuest(guest, tableId) {
+  const table = getTableById(tableId);
+  if (!table) return false;
+  const current = getTableOccupancy(tableId) - (guest.table_id === tableId ? Number(guest.group_size || 1) : 0);
+  return current + Number(guest.group_size || 1) <= Number(table.capacity || 0);
+}
+
+function autoSeatGuests(announce = true) {
+  const seated = [];
+
+  guests.forEach((guest) => {
+    const currentTable = guest.table_id ? getTableById(guest.table_id) : null;
+    if (currentTable) {
+      const used = seated
+        .filter((item) => item.table_id === currentTable.id)
+        .reduce((total, item) => total + Number(item.group_size || 1), 0);
+      if (used + Number(guest.group_size || 1) <= Number(currentTable.capacity || 0)) {
+        seated.push({ ...guest });
+        return;
+      }
+    }
+
+    const table = tables.find((candidate) => {
+      const used = seated
+        .filter((item) => item.table_id === candidate.id)
+        .reduce((total, item) => total + Number(item.group_size || 1), 0);
+      return used + Number(guest.group_size || 1) <= Number(candidate.capacity || 0);
+    });
+
+    seated.push({ ...guest, table_id: table?.id || null });
+  });
+
+  guests = seated;
+  saveLocalData();
+  if (announce) setStatus("Distribuicao automatica concluida.");
+}
+
 function getFilteredRows() {
   return rsvps.filter((item) => {
     if (currentFilter === "pending") return item.message && !item.is_approved;
@@ -62,39 +243,44 @@ function renderStats() {
   const attending = rsvps.filter((item) => item.answer === "sim").length;
   const declined = rsvps.filter((item) => item.answer === "nao").length;
   const pending = rsvps.filter((item) => item.message && !item.is_approved).length;
-  const approved = rsvps.filter((item) => item.is_approved).length;
+  const seated = guests.filter((item) => item.table_id).length;
+  const seatsUsed = guests.reduce((total, guest) => total + Number(guest.group_size || 1), 0);
+  const seatsTotal = tables.reduce((total, table) => total + Number(table.capacity || 0), 0);
   const stats = [
-    ["Total", rsvps.length],
+    ["RSVPs", rsvps.length],
     ["Presentes", attending],
     ["Ausentes", declined],
     ["Por aprovar", pending],
-    ["Publicadas", approved]
+    ["Convidados", guests.length],
+    ["Alocados", seated],
+    ["Lugares", `${seatsUsed}/${seatsTotal}`]
   ];
 
   adminStats.innerHTML = stats.map(([label, value]) => `
-    <article class="stat-card"><strong>${value}</strong><span>${label}</span></article>
+    <article class="stat-card"><strong>${escapeHtml(value)}</strong><span>${label}</span></article>
   `).join("");
 }
 
-function renderRows() {
+function renderRsvps() {
   const rows = getFilteredRows();
   renderStats();
 
   if (!rows.length) {
-    adminList.innerHTML = '<article class="admin-card"><p>Nenhuma confirmação neste filtro.</p></article>';
+    adminList.innerHTML = '<article class="admin-card"><p>Nenhuma confirmacao neste filtro.</p></article>';
     return;
   }
 
   adminList.innerHTML = rows.map((item) => {
     const tableLabel = item.table_name ? `Mesa ${item.table_name}` : "Mesa a confirmar";
-    const answer = item.answer === "sim" ? "Vai comparecer" : "Não poderá comparecer";
+    const answer = item.answer === "sim" ? "Vai comparecer" : "Nao podera comparecer";
     const message = item.message ? escapeHtml(item.message) : "Sem mensagem.";
     const approval = item.is_approved ? "Publicada no mural" : "Ainda privada";
+    const guestCount = item.guest_count ? ` · ${item.guest_count} pessoa(s)` : "";
 
     return `
       <article class="admin-card">
         <header>
-          <span class="admin-meta">${answer} · ${approval}</span>
+          <span class="admin-meta">${answer} · ${approval}${guestCount}</span>
           <h2>${escapeHtml(item.name)}</h2>
           <p>${escapeHtml(tableLabel)} · ${escapeHtml(item.phone || "Sem telefone")} · ${formatDate(item.created_at)}</p>
         </header>
@@ -109,21 +295,129 @@ function renderRows() {
   }).join("");
 }
 
+function renderTables() {
+  renderStats();
+  const unseated = guests.filter((guest) => !guest.table_id);
+  const columns = tables.map((table) => {
+    const tableGuests = guests.filter((guest) => guest.table_id === table.id);
+    const occupied = getTableOccupancy(table.id);
+    const isFull = occupied >= table.capacity;
+
+    return `
+      <section class="table-column ${isFull ? "is-full" : ""}" data-table-id="${table.id}">
+        <header>
+          <div>
+            <strong>Mesa ${escapeHtml(table.number)} · ${escapeHtml(table.name)}</strong>
+            <span>${occupied}/${table.capacity} lugares</span>
+          </div>
+          <button type="button" data-table-remove="${table.id}" aria-label="Remover mesa">×</button>
+        </header>
+        <div class="table-guests" data-drop-zone="${table.id}">
+          ${tableGuests.map(renderGuestChip).join("") || '<p class="empty-note">Arraste convidados para aqui.</p>'}
+        </div>
+      </section>
+    `;
+  }).join("");
+
+  tableBoard.innerHTML = `
+    <section class="table-column unseated" data-table-id="">
+      <header><div><strong>Sem mesa</strong><span>${unseated.length} grupo(s)</span></div></header>
+      <div class="table-guests" data-drop-zone="">${unseated.map(renderGuestChip).join("") || '<p class="empty-note">Tudo alocado.</p>'}</div>
+    </section>
+    ${columns}
+  `;
+}
+
+function renderGuestChip(guest) {
+  return `
+    <article class="guest-chip" draggable="true" data-guest-id="${guest.id}">
+      <strong>${escapeHtml(guest.name)}</strong>
+      <span>${Number(guest.group_size || 1)} pessoa(s) · limite ${Number(guest.max_companions || guest.group_size || 1)}</span>
+      <button type="button" data-unseat="${guest.id}">Remover da mesa</button>
+    </article>
+  `;
+}
+
+function buildInviteUrl(guest) {
+  const table = getTableById(guest.table_id);
+  const url = new URL("index.html", window.location.href);
+  url.searchParams.set("nome", guest.name);
+  url.searchParams.set("limite", String(guest.max_companions || guest.group_size || 1));
+  url.searchParams.set("gid", guest.invite_token);
+  url.searchParams.set("msg", inviteSettings.message);
+  url.searchParams.set("img", inviteSettings.image);
+  url.searchParams.set("vermesa", inviteSettings.showTable ? "1" : "0");
+  if (table) {
+    url.searchParams.set("mesa", String(table.number));
+    url.searchParams.set("mesaNome", table.name);
+  }
+  return url.href;
+}
+
+function renderInvites() {
+  inviteMessage.value = inviteSettings.message;
+  inviteImage.value = inviteSettings.image;
+  showTableInput.checked = inviteSettings.showTable;
+
+  inviteList.innerHTML = guests.map((guest) => {
+    const inviteUrl = buildInviteUrl(guest);
+    const table = getTableById(guest.table_id);
+    const text = `${inviteSettings.message}\n\n${inviteUrl}`;
+    const whatsapp = `https://wa.me/${String(guest.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+    const mailto = `mailto:${guest.email || ""}?subject=${encodeURIComponent("Convite Joyce & Edson")}&body=${encodeURIComponent(text)}`;
+
+    return `
+      <article class="invite-card">
+        <div>
+          <strong>${escapeHtml(guest.name)}</strong>
+          <span>${table ? `Mesa ${table.number} · ${table.name}` : "Mesa a confirmar"} · limite ${guest.max_companions}</span>
+        </div>
+        <input readonly value="${escapeHtml(inviteUrl)}">
+        <div class="admin-actions">
+          <a href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>
+          <a href="${mailto}">E-mail</a>
+          <button type="button" data-copy-link="${escapeHtml(inviteUrl)}">Copiar link</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderActiveTab() {
+  document.querySelectorAll("[data-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.panel !== activeTab;
+  });
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.tab === activeTab);
+  });
+
+  if (activeTab === "rsvps") renderRsvps();
+  if (activeTab === "tables") renderTables();
+  if (activeTab === "invites") renderInvites();
+}
+
 async function loadRsvps() {
-  setStatus("A carregar confirmações...");
+  if (!client) {
+    rsvps = JSON.parse(localStorage.getItem("joyce-edson-rsvps") || "[]");
+    renderActiveTab();
+    setStatus("Modo local: dados guardados neste navegador.");
+    return;
+  }
+
+  setStatus("A carregar confirmacoes...");
   const { data, error } = await client
     .from("rsvps")
     .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
-    setStatus(`Não foi possível carregar as confirmações: ${error.message}`);
+    setStatus(`Nao foi possivel carregar as confirmacoes: ${error.message}`);
     return;
   }
 
   rsvps = data || [];
   setStatus(`Actualizado: ${new Intl.DateTimeFormat("pt-MZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date())}`);
-  renderRows();
+  renderActiveTab();
 }
 
 function startAutoRefresh() {
@@ -134,6 +428,7 @@ function startAutoRefresh() {
 }
 
 async function updateApproval(id, isApproved) {
+  if (!client) return;
   setStatus("A actualizar...");
   const { error } = await client
     .from("rsvps")
@@ -141,7 +436,7 @@ async function updateApproval(id, isApproved) {
     .eq("id", id);
 
   if (error) {
-    setStatus("Não foi possível actualizar esta mensagem.");
+    setStatus("Nao foi possivel actualizar esta mensagem.");
     return;
   }
 
@@ -149,8 +444,8 @@ async function updateApproval(id, isApproved) {
 }
 
 async function deleteRsvp(id) {
-  const confirmed = window.confirm("Remover esta confirmação definitivamente?");
-  if (!confirmed) return;
+  const confirmed = window.confirm("Remover esta confirmacao definitivamente?");
+  if (!confirmed || !client) return;
 
   setStatus("A remover...");
   const { error } = await client
@@ -159,23 +454,40 @@ async function deleteRsvp(id) {
     .eq("id", id);
 
   if (error) {
-    setStatus("Não foi possível remover esta confirmação.");
+    setStatus("Nao foi possivel remover esta confirmacao.");
     return;
   }
 
   await loadRsvps();
 }
 
+function parseGuestImport(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, phone = "", email = "", groupSize = "1", limit = groupSize] = line.split(",").map((item) => item.trim());
+      return normalizeGuest({ name, phone, email, group_size: groupSize, max_companions: limit });
+    });
+}
+
 async function init() {
+  loadLocalData();
+
   if (!client) {
-    loginStatus.textContent = "Configure primeiro o Supabase em js/supabase-config.js.";
-    loginForm.querySelector("button").disabled = true;
+    loginStatus.textContent = "Sem Supabase configurado. Pode entrar em modo local para testar o painel.";
+    loginForm.querySelector("button").textContent = "Entrar em modo local";
+    document.getElementById("adminEmail").required = false;
+    document.getElementById("adminPassword").required = false;
+    showLogin();
     return;
   }
 
   const { data } = await client.auth.getSession();
   if (data.session) {
     showDashboard();
+    await loadPlannerData();
     await loadRsvps();
     startAutoRefresh();
   }
@@ -185,35 +497,56 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginStatus.textContent = "A entrar...";
 
+  if (!client) {
+    loginStatus.textContent = "";
+    showDashboard();
+    await loadRsvps();
+    renderActiveTab();
+    return;
+  }
+
   const email = document.getElementById("adminEmail").value.trim();
   const password = document.getElementById("adminPassword").value;
   const { error } = await client.auth.signInWithPassword({ email, password });
 
   if (error) {
-    loginStatus.textContent = "Email ou palavra-passe inválidos.";
+    loginStatus.textContent = "Email ou palavra-passe invalidos.";
     return;
   }
 
   loginStatus.textContent = "";
   showDashboard();
+  await loadPlannerData();
   await loadRsvps();
   startAutoRefresh();
 });
 
 logoutButton.addEventListener("click", async () => {
   window.clearInterval(refreshTimer);
-  await client.auth.signOut();
+  if (client) await client.auth.signOut();
   showLogin();
 });
 
 refreshButton.addEventListener("click", loadRsvps);
+autoSeatButton.addEventListener("click", () => {
+  autoSeatGuests();
+  void savePlannerData();
+  renderActiveTab();
+});
 
 document.querySelectorAll("[data-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll("[data-filter]").forEach((item) => item.classList.remove("is-active"));
     button.classList.add("is-active");
     currentFilter = button.dataset.filter;
-    renderRows();
+    renderRsvps();
+  });
+});
+
+document.querySelectorAll("[data-tab]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeTab = button.dataset.tab;
+    renderActiveTab();
   });
 });
 
@@ -225,6 +558,117 @@ adminList.addEventListener("click", async (event) => {
   if (action === "approve") await updateApproval(id, true);
   if (action === "hide") await updateApproval(id, false);
   if (action === "delete") await deleteRsvp(id);
+});
+
+guestForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = new FormData(guestForm);
+  guests.push(normalizeGuest({
+    name: form.get("name"),
+    phone: form.get("phone"),
+    email: form.get("email"),
+    group_size: form.get("group_size"),
+    max_companions: form.get("max_companions")
+  }));
+  autoSeatGuests(false);
+  void savePlannerData();
+  guestForm.reset();
+  renderActiveTab();
+});
+
+tableForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = new FormData(tableForm);
+  tables.push(normalizeTable({
+    number: form.get("number"),
+    name: form.get("name"),
+    capacity: form.get("capacity")
+  }));
+  void savePlannerData();
+  tableForm.reset();
+  renderActiveTab();
+});
+
+importButton.addEventListener("click", () => {
+  const imported = parseGuestImport(guestImport.value);
+  if (!imported.length) return;
+  guests = [...guests, ...imported];
+  autoSeatGuests(false);
+  void savePlannerData();
+  guestImport.value = "";
+  renderActiveTab();
+  setStatus(`${imported.length} convidado(s) importado(s).`);
+});
+
+inviteForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  inviteSettings = {
+    message: inviteMessage.value.trim() || inviteDefaults.message,
+    image: inviteImage.value.trim() || inviteDefaults.image,
+    showTable: showTableInput.checked
+  };
+  void savePlannerData();
+  renderActiveTab();
+  setStatus("Modelo de convite actualizado.");
+});
+
+tableBoard.addEventListener("dragstart", (event) => {
+  const chip = event.target.closest("[data-guest-id]");
+  if (!chip) return;
+  event.dataTransfer.setData("text/plain", chip.dataset.guestId);
+});
+
+tableBoard.addEventListener("dragover", (event) => {
+  if (event.target.closest("[data-drop-zone]")) event.preventDefault();
+});
+
+tableBoard.addEventListener("drop", (event) => {
+  const zone = event.target.closest("[data-drop-zone]");
+  if (!zone) return;
+  event.preventDefault();
+
+  const guestId = event.dataTransfer.getData("text/plain");
+  const guest = guests.find((item) => item.id === guestId);
+  const tableId = zone.dataset.dropZone || null;
+  if (!guest) return;
+
+  if (tableId && !canSeatGuest(guest, tableId)) {
+    setStatus("Esta mesa ja atingiu o limite de capacidade.");
+    return;
+  }
+
+  guest.table_id = tableId;
+  void savePlannerData();
+  renderActiveTab();
+});
+
+tableBoard.addEventListener("click", (event) => {
+  const unseat = event.target.closest("[data-unseat]");
+  const removeTable = event.target.closest("[data-table-remove]");
+
+  if (unseat) {
+    const guest = guests.find((item) => item.id === unseat.dataset.unseat);
+    if (guest) guest.table_id = null;
+    void savePlannerData();
+    renderActiveTab();
+  }
+
+  if (removeTable) {
+    const tableId = removeTable.dataset.tableRemove;
+    guests = guests.map((guest) => guest.table_id === tableId ? { ...guest, table_id: null } : guest);
+    tables = tables.filter((table) => table.id !== tableId);
+    void savePlannerData();
+    if (client) void client.from("event_tables").delete().eq("id", tableId);
+    renderActiveTab();
+  }
+});
+
+inviteList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-copy-link]");
+  if (!button) return;
+  await navigator.clipboard.writeText(button.dataset.copyLink);
+  button.textContent = "Copiado";
+  setTimeout(() => { button.textContent = "Copiar link"; }, 1400);
 });
 
 init();
